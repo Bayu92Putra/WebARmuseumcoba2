@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebAR UI Museum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #bbb2aa80; font-family: sans-serif; }
+    #app { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: none; align-items: center; justify-content: center; z-index: 10; }
+    .ui-container { display: flex; gap: 1rem; align-items: center; }
+    .sidebar { background: rgba(255 255 255 / 0.15); border-radius: 20px; backdrop-filter: blur(12px); width: 96px; padding: 16px 12px; display: flex; flex-direction: column; gap: 32px; justify-content: center; }
+    .sidebar-button { display: flex; align-items: center; gap: 0.5rem; color: white; font-weight: 600; font-size: 14px; cursor: pointer; }
+    .sidebar-button svg { width: 20px; height: 20px; fill: white; }
+    .main-frame { width: 320px; aspect-ratio: 1 / 1; border: 2px solid rgba(255 255 255 / 0.22); border-radius: 24px; background: rgba(255 255 255 / 0.1); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgb(0 0 0 / 0.22); display: flex; flex-direction: column; align-items: center; padding: 16px; position: relative; overflow: hidden; }
+    .video-wrapper { flex-grow: 1; width: 100%; background: #264e96; border-radius: 12px; overflow: hidden; display: none; align-items: center; justify-content: center; position: relative; opacity: 0; transition: opacity 0.5s ease; }
+    .video-wrapper.active { display: flex; opacity: 1; }
+    video, audio { width: 100%; height: auto; }
+    .btn-circle-play { border: 2px solid rgba(255 255 255 / 0.5); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; }
+    .btn-circle-play:hover { background: rgba(255 255 255 / 0.22); border-color: white; }
+    .labels-container { position: absolute; left: 110px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 36px; color: white; font-weight: 600; font-size: 14px; pointer-events: none; }
+    .label-item.hide-to-button { opacity: 0; transform: translateX(-20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    #labelsContainer.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<!-- WebAR marker -->
+<a-scene embedded arjs>
+  <a-marker id="marker" preset="hiro"></a-marker>
+  <a-entity camera></a-entity>
+</a-scene>
+
+<!-- UI Container -->
+<div id="app">
+  <div class="ui-container">
+    <nav class="sidebar">
+      <button class="sidebar-button" id="btnVideo"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg><span>Video</span></button>
+      <button class="sidebar-button" id="btnAudio"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06c1.5-.74 2.5-2.26 2.5-4.03z"/></svg><span>Audio</span></button>
+      <button class="sidebar-button" id="btnTeks"><svg viewBox="0 0 24 24"><path d="M4 17h16v2H4zM4 13h16v2H4zM4 7v2h16V7z"/></svg><span>Teks</span></button>
+    </nav>
+
+    <section class="main-frame">
+      <!-- Video -->
+      <div id="videoWrapper" class="video-wrapper">
+        <video id="videoContent" src="Bisyarat1.mp4" controls></video>
+      </div>
+      <div id="videoControls" style="margin-top:12px; display:none;">
+        <button id="playPauseBtn" class="btn-circle-play">
+          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+          <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none;"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg>
+        </button>
+      </div>
+
+      <!-- Audio -->
+      <div id="audioWrapper" class="video-wrapper">
+        <audio id="audioContent" controls>
+          <source src="KetIndo1.mp3" type="audio/mpeg" />
+        </audio>
+      </div>
+
+      <!-- Teks -->
+      <div id="teksWrapper" class="video-wrapper" style="flex-direction: column; padding: 1rem; color: white; font-size: 14px; line-height: 1.5;">
+        <p id="teksContent">Lempeng Emas Peripih Candi Kimpulan merupakan salah satu dari benda cagar budaya di Kabupaten Sleman. Artefak ini ditemukan di area kampus Universitas Islam Indonesia...</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Label awal -->
+  <div id="labelsContainer" class="labels-container">
+    <div class="label-item">Video</div>
+    <div class="label-item">Audio</div>
+    <div class="label-item">Teks</div>
+  </div>
+</div>
+
+<script>
+  const appUI = document.getElementById('app');
+  const marker = document.getElementById('marker');
+
+  const btnVideo = document.getElementById('btnVideo');
+  const btnAudio = document.getElementById('btnAudio');
+  const btnTeks = document.getElementById('btnTeks');
+
+  const videoWrapper = document.getElementById('videoWrapper');
+  const videoControls = document.getElementById('videoControls');
+  const videoContent = document.getElementById('videoContent');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const playIcon = document.getElementById('playIcon');
+  const pauseIcon = document.getElementById('pauseIcon');
+
+  const audioWrapper = document.getElementById('audioWrapper');
+  const audioContent = document.getElementById('audioContent');
+  const teksWrapper = document.getElementById('teksWrapper');
+
+  const labelsContainer = document.getElementById('labelsContainer');
+  let videoActive = false, audioActive = false, teksActive = false;
+
+  function hideLabelsToButtons() {
+    const labels = Array.from(labelsContainer.children);
+    labels.forEach((label, i) => {
+      setTimeout(() => label.classList.add('hide-to-button'), i * 100);
+    });
+    setTimeout(() => labelsContainer.classList.add('hidden'), 500);
+  }
+
+  function showLabelsFromButtons() {
+    labelsContainer.classList.remove('hidden');
+    const labels = Array.from(labelsContainer.children);
+    labels.forEach(label => label.classList.remove('hide-to-button'));
+  }
+
+  function resetAllMediaUI() {
+    [videoWrapper, audioWrapper, teksWrapper].forEach(el => {
+      el.classList.remove('active');
+      el.style.display = 'none';
+    });
+    videoControls.style.display = 'none';
+    videoContent.pause();
+    audioContent.pause();
+    playIcon.style.display = 'inline';
+    pauseIcon.style.display = 'none';
+  }
+
+  btnVideo.addEventListener('click', () => {
+    if (videoActive) return;
+    videoActive = true; audioActive = teksActive = false;
+    resetAllMediaUI();
+    videoWrapper.style.display = 'flex';
+    videoControls.style.display = 'block';
+    requestAnimationFrame(() => videoWrapper.classList.add('active'));
+    hideLabelsToButtons();
+  });
+
+  btnAudio.addEventListener('click', () => {
+    if (audioActive) return;
+    audioActive = true; videoActive = teksActive = false;
+    resetAllMediaUI();
+    audioWrapper.style.display = 'flex';
+    requestAnimationFrame(() => audioWrapper.classList.add('active'));
+    hideLabelsToButtons();
+  });
+
+  btnTeks.addEventListener('click', () => {
+    if (teksActive) return;
+    teksActive = true; videoActive = audioActive = false;
+    resetAllMediaUI();
+    teksWrapper.style.display = 'flex';
+    requestAnimationFrame(() => teksWrapper.classList.add('active'));
+    hideLabelsToButtons();
+  });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (videoContent.paused) videoContent.play();
+    else videoContent.pause();
+  });
+
+  videoContent.addEventListener('play', () => {
+    playIcon.style.display = 'none';
+    pauseIcon.style.display = 'inline';
+  });
+  videoContent.addEventListener('pause', () => {
+    playIcon.style.display = 'inline';
+    pauseIcon.style.display = 'none';
+  });
+
+  marker.addEventListener('markerFound', () => {
+    appUI.style.display = 'flex';
+    showLabelsFromButtons();
+  });
+  marker.addEventListener('markerLost', () => {
+    appUI.style.display = 'none';
+    resetAllMediaUI();
+    showLabelsFromButtons();
+  });
+</script>
+
+</body>
+</html>
