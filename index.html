@@ -50,12 +50,12 @@
   </a-assets>
 
   <a-marker id="marker" preset="hiro">
-    <a-video id="videoPlane" src="#videoAsset" width="2.56" height="1.44" position="0 0.75 0" rotation="-90 0 0"
+    <a-plane id="videoPlane" width="2.56" height="1.44" position="0 0.75 0" rotation="-90 0 0"
              visible="false"
              animation__fadein="property: opacity; to: 1; dur: 500; startEvents: fadein"
              animation__fadeout="property: opacity; to: 0; dur: 500; startEvents: fadeout"
-             material="shader: flat; opacity: 0"></a-video>
-
+             material="shader: flat; opacity: 0"></a-plane>
+    <video id="videoAsset" src="Bisyarat1.mp4" crossorigin="anonymous" playsinline muted loop style="display:none"></video>
     <a-entity id="audioEntity" sound="src: #audioIndo" visible="false"></a-entity>
 
     <a-entity id="textPanel" visible="false" position="0 1.2 0" rotation="-90 0 0">
@@ -94,6 +94,7 @@
   const marker = document.querySelector('#marker');
   let isMuted = true;
   let currentLang = 'id';
+  let texture = null;
 
   function showContent(type) {
     videoPlane.setAttribute('visible', false);
@@ -103,11 +104,15 @@
     if (audioEntity.components.sound) audioEntity.components.sound.stopSound();
 
     if (type === 'video') {
-      videoPlane.setAttribute('visible', true);
-      videoPlane.emit('fadein');
-      video.muted = isMuted;
-      video.play();
+    if (!texture) {
+      texture = new THREE.VideoTexture(video);
+      videoPlane.getObject3D('mesh').material.map = texture;
+      videoPlane.getObject3D('mesh').material.needsUpdate = true;
     }
+    videoPlane.setAttribute('visible', true);
+    videoPlane.emit('fadein');
+    video.play();
+  }
 
     if (type === 'audio') {
       audioEntity.setAttribute('visible', true);
