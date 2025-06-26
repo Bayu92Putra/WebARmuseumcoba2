@@ -1,52 +1,90 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WebAR Konten AR Final - No Icons Folder</title>
+  <title>WebAR - UI Lengkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    .overlay-ui {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+      z-index: 10;
+    }
+    .icon-btn {
+      background: rgba(0,0,0,0.4);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .icon-btn svg {
+      fill: white;
+      width: 24px;
+      height: 24px;
+    }
+  </style>
 </head>
-<body style="margin: 0; overflow: hidden;">
+<body>
 
 <a-scene embedded arjs>
   <a-assets>
     <video id="videoAsset" src="Bisyarat1.mp4" preload="auto" crossorigin="anonymous" playsinline muted></video>
-    <audio id="audioAsset" src="KetIndo1.mp3"></audio>
-    <img id="videoBtn" src="video-icon.png">
-    <img id="audioBtn" src="note-icon.png">
-    <img id="textBtn" src="text-icon.png">
+    <audio id="audioIndo" src="KetIndo1.mp3"></audio>
+    <audio id="audioEng" src="KetInggris1.mp3"></audio>
   </a-assets>
 
   <a-marker id="marker" preset="hiro">
-
-    <!-- Tombol Kontrol -->
-    <a-image src="#videoBtn" position="-1 1.5 0" width="0.5" height="0.5" onclick="showContent('video')"></a-image>
-    <a-image src="#audioBtn" position="0 1.5 0" width="0.5" height="0.5" onclick="showContent('audio')"></a-image>
-    <a-image src="#textBtn" position="1 1.5 0" width="0.5" height="0.5" onclick="showContent('text')"></a-image>
-
-    <!-- Video -->
     <a-video id="videoPlane" src="#videoAsset" width="2.56" height="1.44" position="0 0.75 0" rotation="-90 0 0"
              visible="false"
              animation__fadein="property: opacity; to: 1; dur: 500; startEvents: fadein"
              animation__fadeout="property: opacity; to: 0; dur: 500; startEvents: fadeout"
              material="shader: flat; opacity: 0"></a-video>
 
-    <!-- Audio Entity -->
-    <a-entity id="audioEntity" sound="src: #audioAsset" visible="false"></a-entity>
+    <a-entity id="audioEntity" sound="src: #audioIndo" visible="false"></a-entity>
 
-    <!-- Text Panel -->
-    <a-entity id="textPanel" visible="false" position="0 0.75 0">
+    <a-entity id="textPanel" visible="false" position="0 1.2 0" rotation="-90 0 0">
       <a-plane color="#000" opacity="0.7" width="2.6" height="1.2"></a-plane>
-      <a-text value="Lempeng Emas Peripih Candi Kimpulan adalah benda cagar budaya dari Sleman..." color="#fff"
-              align="center" width="2.4" position="0 0 0.01"></a-text>
+      <a-text value="Lempeng Emas Peripih Candi Kimpulan adalah benda cagar budaya dari Sleman..."
+               color="#fff" align="center" width="2.4" position="0 0 0.01" rotation="20 0 0"></a-text>
     </a-entity>
   </a-marker>
 
   <a-entity camera></a-entity>
 </a-scene>
+
+<div class="overlay-ui">
+  <div class="icon-btn" onclick="showContent('video')" aria-label="Video">
+    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+  </div>
+  <div class="icon-btn" onclick="showContent('audio')" aria-label="Audio">
+    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06c1.5-.74 2.5-2.26 2.5-4.03z"/></svg>
+  </div>
+  <div class="icon-btn" onclick="showContent('text')" aria-label="Teks">
+    <svg viewBox="0 0 24 24"><path d="M4 17h16v2H4zM4 13h16v2H4zM4 7v2h16V7z"/></svg>
+  </div>
+  <div class="icon-btn" onclick="toggleMute()" aria-label="Mute/Unmute">
+    <svg id="muteIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+  </div>
+  <div class="icon-btn" onclick="toggleAudioLang()" aria-label="Ganti Bahasa">
+    <svg viewBox="0 0 24 24"><path d="M12 4v3H2v2h10v3l4-4-4-4zM22 19h-2v-6h2v6zm-4 0h-2v-4h2v4z"/></svg>
+  </div>
+</div>
 
 <script>
   const video = document.querySelector('#videoAsset');
@@ -54,6 +92,8 @@
   const audioEntity = document.querySelector('#audioEntity');
   const textPanel = document.querySelector('#textPanel');
   const marker = document.querySelector('#marker');
+  let isMuted = true;
+  let currentLang = 'id';
 
   function showContent(type) {
     videoPlane.setAttribute('visible', false);
@@ -65,6 +105,7 @@
     if (type === 'video') {
       videoPlane.setAttribute('visible', true);
       videoPlane.emit('fadein');
+      video.muted = isMuted;
       video.play();
     }
 
@@ -75,6 +116,25 @@
 
     if (type === 'text') {
       textPanel.setAttribute('visible', true);
+    }
+  }
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    video.muted = isMuted;
+    const icon = document.querySelector('#muteIcon');
+    icon.innerHTML = isMuted
+      ? '<path d="M3 9v6h4l5 5V4L7 9H3z"/>'
+      : '<path d="M1 1l22 22M16.5 12c0-1.77-1-3.29-2.5-4.03v8.06c1.5-.74 2.5-2.26 2.5-4.03zM3 9v6h4l5 5V4L7 9H3z"/>';
+  }
+
+  function toggleAudioLang() {
+    currentLang = currentLang === 'id' ? 'en' : 'id';
+    const newSrc = currentLang === 'id' ? '#audioIndo' : '#audioEng';
+    audioEntity.setAttribute('sound', 'src: ' + newSrc);
+    if (audioEntity.components.sound) {
+      audioEntity.components.sound.stopSound();
+      audioEntity.components.sound.playSound();
     }
   }
 
